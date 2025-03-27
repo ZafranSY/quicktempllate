@@ -3,7 +3,7 @@ import React, { useState, useRef, useCallback } from "react";
 import TemplatePage from "./TemplatePage";
 import InputPanel from "./InputPanel";
 import { useEffect } from 'react';
-
+import html2canvas from "html2canvas";
 interface TemplateData {
   name: string;
   image: string;
@@ -61,8 +61,7 @@ const MainPage: React.FC = () => {
       setShowInputPanel(false);
     }
   };
-
-  const handleDownload = useCallback(() =>{
+  const handleDownload = useCallback(() => {
     // Prevent multiple clicks or processing if already downloading
     if (!templateRef.current || isDownloading) return;
     
@@ -74,20 +73,48 @@ const MainPage: React.FC = () => {
       const originalStyle = templateRef.current.style.cssText;
       templateRef.current.style.height = "auto";
       templateRef.current.style.overflow = "visible";
-
+  
       // Use setTimeout to ensure the DOM updates before capturing
       setTimeout(async () => {
         try {
-          // Capture the template using html2canvas
-          const html2canvasModule = await import('html2canvas');
+          // Dynamically import html2canvas
+          const html2canvasModule = await import("html2canvas");
           const html2canvas = html2canvasModule.default;
-
-          const canvas = await html2canvas(templateRef.current!, {
-            backgroundColor: null,
+  
+          // Create a clone of the element to modify its styles
+          const clone = templateRef.current!.cloneNode(true) as HTMLElement;
+          document.body.appendChild(clone);
+          clone.style.position = "absolute";
+          clone.style.left = "-9999px";
+          
+          // Replace any oklch colors with fallback colors in the clone
+          const elementsWithOklch = clone.querySelectorAll("*");
+          elementsWithOklch.forEach((el) => {
+            const computedStyle = window.getComputedStyle(el);
+            // Check for any property that might use oklch
+            for (const prop of ['color', 'backgroundColor', 'borderColor']) {
+              const value = computedStyle[prop as any];
+              if (value && value.includes('oklch')) {
+                // Replace with a fallback color
+                (el as HTMLElement).style[prop as any] = 
+                  prop === 'color' ? '#000000' : 
+                  prop === 'backgroundColor' ? '#ffffff' : 
+                  '#cccccc';
+              }
+            }
+          });
+  
+          // Capture the clone using html2canvas with a fallback background color
+          const canvas = await html2canvas(clone, {
+            backgroundColor: "#ffffff",
             scale: 2,
             useCORS: true,
-            allowTaint: false,
+            allowTaint: true,
+            logging: false,
           });
+          
+          // Remove the clone from the DOM
+          document.body.removeChild(clone);
           
           // Convert canvas to image and trigger download
           const image = canvas.toDataURL("image/jpeg", 1.0);
@@ -114,7 +141,7 @@ const MainPage: React.FC = () => {
       setIsDownloading(false);
     }
   }, [templateRef, isDownloading, finalData.name]);
-
+  
   const handleReset = useCallback(() =>{
     setFinalData(initialData);
     setShowInputPanel(true);
