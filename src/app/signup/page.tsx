@@ -1,26 +1,27 @@
-"use client"
+"use client";
 
-import React, { useState } from "react";
-import { FaEyeSlash, FaEye, FaGithub } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
-import { IconType } from "react-icons";
-
+import React, { useState, lazy, Suspense } from "react";
+// Import only the icons you're actually using
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import Link from "next/link";
 import { supabase } from "../client";
 
-// Fixed IconWrapper component
-const IconWrapper: React.FC<{ icon: IconType; size?: number; className?: string }> = ({ 
+// Remove static generation directives from client components
+// export const dynamic = 'force-static';
+// export const revalidate = 3600; 
+
+// Optimize the IconWrapper component with proper TypeScript types
+const IconWrapper = ({ 
   icon: Icon, 
   size, 
   className 
-}) => {
-  // Cast the Icon component to a React component that returns ReactElement
-  return React.createElement(Icon as React.ComponentType<{ size?: number; className?: string }>, { 
-    size, 
-    className 
-  });
-};
+}: {
+  icon: React.ElementType;
+  size?: number | string;
+  className?: string;
+}) => <Icon size={size} className={className} />;
 
-function SignupPage() {
+export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
@@ -29,207 +30,112 @@ function SignupPage() {
   };
 
   const [formData, setFormData] = useState({
-    email: "", 
+    email: "",
     password: "",
-    condfirmpassword:""
+    confirmPassword: ""
   });
 
-  function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
-    setError(""); // Clear error on input change
-
-    setFormData((prevFormData) => {
-      return {
-        ...prevFormData,
-        [event.target.name]: event.target.value
-      };
-    });
-  }
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault(); 
-
-    try {
-        console.log(formData); // Implement login logic here
-
-        if (!formData.email || !formData.password) {
-            setError("Email and password are required.");
-            return;
-          }
-          
-          if (formData.password.length < 6) {
-            setError("Password must be at least 6 characters long.");
-            return;
-          }
-          
-          
-            const {data, error} = await supabase.auth.signUp({
-                email:formData.email,
-                password : formData.password,
-               
-            })
-            if (error) {
-                console.error(error);
-                setError(error.message); // Display server error message
-                return;
-              }
-              console.log("Sign up successful:", data);
-              setError(""); // Clear error on success
-    } catch (err) {
-        console.error("Unexpected error:", err);
-    setError("An unexpected error occurred.");
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
     }
-  }
-  
+    
+    try {
+      // Handle signup logic
+      console.log("Sign up attempted with:", formData);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
+    }
+  };
+
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
-      <div className="w-full max-w-md p-4 ">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-white p-4">
+      <div className="w-full max-w-sm space-y-6">
+        <div className="space-y-2 text-center">
+          <h1 className="text-3xl font-bold">Create an account</h1>
+          <p className="text-gray-500">Enter your details to get started</p>
+        </div>
         
-
-        {/* Form Container */}
-        <div className="bg-white rounded-lg shadow-md w-full p-5">
-            {/* Header */}
-        <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">
-        Create an account
-
-        </h1>
-          <form onSubmit={handleSubmit}>
-             
-            {/* Email Field */}
-            <div className="mb-3">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email address
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className=" w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-600 text-base font-normal"
-                placeholder=""
-              />
-            </div>
-          {/* password Field */}
-          <div className="mb-3">
-  {/* Label is OUTSIDE the relative container */}
-  <label
-    htmlFor="password"
-    className="block text-sm font-medium text-gray-700 mb-2"
-  >
-    Password
-  </label>
-
-  {/* Make only the input-wrapper relative */}
-  <div className="relative">
-    <input
-      type={showPassword ? "text" : "password"}
-      id="password"
-      name="password"
-      value={formData.password}
-      onChange={handleChange}
-      className="w-full px-3 py-2 border border-gray-300 rounded-md 
-                 focus:outline-none focus:ring-2 focus:ring-blue-500 
-                 focus:border-blue-500 text-gray-600 text-base font-normal"
-      placeholder=""
-    />
-    <button
-      type="button"
-      onClick={togglePasswordVisibility}
-      /* Absolutely position this button inside the .relative container */
-      className="absolute inset-y-0 right-3 flex items-center 
-                 text-gray-500 hover:text-gray-700"
-    >
-      {showPassword ? (
-        <IconWrapper icon={FaEyeSlash} size={20} />
-      ) : (
-        <IconWrapper icon={FaEye} size={20} />
-      )}
-    </button>
-  </div>
-</div>
-
-<div className="mb-3">
-  <label
-    htmlFor="condfirmpassword"
-    className="block text-sm font-medium text-gray-700 mb-2"
-  >
-    Confirm Password
-  </label>
-
-  <div className="relative">
-    <input
-      type={showPassword ? "text" : "password"}
-      id="condfirmpassword"
-      name="condfirmpassword"
-      value={formData.condfirmpassword}
-      onChange={handleChange}
-      className="w-full px-3 py-2 border border-gray-300 rounded-md 
-                 focus:outline-none focus:ring-2 focus:ring-blue-500 
-                 focus:border-blue-500 text-gray-600 text-base font-normal"
-      placeholder=""
-    />
-    <button
-      type="button"
-      onClick={togglePasswordVisibility}
-      className="absolute inset-y-0 right-3 flex items-center 
-                 text-gray-500 hover:text-gray-700"
-    >
-      {showPassword ? (
-        <IconWrapper icon={FaEyeSlash} size={20} />
-      ) : (
-        <IconWrapper icon={FaEye} size={20} />
-      )}
-    </button>
-  </div>
-</div>
-
-            
-            {/* Remember Me & Forgot Password */}
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
+            {error}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="email" className="text-sm font-medium">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              placeholder="m@example.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              required
+            />
+          </div>
           
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-
-            {/* Sign In Button */}
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 text-base px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 "
-            >
-              Sign in
-            </button>
-
-            {/* Already have an account? */}
-            <div className="mt-1 text-center">
-              <span className="text-sm text-gray-600  mb-6">
-                 Already have an account?{" "}
-                <a href="/login" className="text-blue-600 hover:text-blue-800 font-medium">
-                  Sign In
-                </a>
-              </span>
-            </div>
-
-            {/* Divider */}
-            <div className="relative flex items-center my-6">
-              <div className="flex-grow border-t border-gray-300"></div>
-              <span className="flex-shrink mx-4 text-gray-600 text-sm">Or continue with</span>
-              <div className="flex-grow border-t border-gray-300"></div>
-            </div>
-
-            {/* Social Login Buttons */}
-            <div className="flex gap-4">
-              <button
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-sm font-medium">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="Enter your password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+              />
+              <button 
                 type="button"
-                className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 text-gray-700"
+                onClick={togglePasswordVisibility}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
               >
-                <IconWrapper icon={FcGoogle} className="w-5 h-5" />
-                <span className="text-sm font-medium">Google</span>
+                {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
               </button>
-             
             </div>
-          </form>
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="confirmPassword" className="text-sm font-medium">
+              Confirm Password
+            </label>
+            <input
+              id="confirmPassword"
+              type={showPassword ? "text" : "password"}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Confirm your password"
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              required
+            />
+          </div>
+          
+          <button
+            type="submit"
+            className="inline-flex w-full items-center justify-center rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+          >
+            Sign up
+          </button>
+        </form>
+        
+        <div className="text-center text-sm">
+          Already have an account?{" "}
+          <Link href="/signin" className="text-blue-600 hover:text-blue-500">
+            Sign in
+          </Link>
         </div>
       </div>
     </div>
   );
 }
-
-
-export default SignupPage;
