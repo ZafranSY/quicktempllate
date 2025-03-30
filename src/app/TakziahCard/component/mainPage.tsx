@@ -4,6 +4,7 @@ import TemplatePage from "./TemplatePage";
 import InputPanel from "./InputPanel";
 import { useEffect } from 'react';
 import html2canvas from "html2canvas";
+
 interface TemplateData {
   name: string;
   image: string;
@@ -26,7 +27,7 @@ const MainPage: React.FC = () => {
   // Removed currentData state since it's not used.
   const [finalData, setFinalData] = useState<TemplateData>(initialData);
   const [showInputPanel, setShowInputPanel] = useState(true);
-  const [isDownloading,setIsDownloading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const templateRef = useRef<HTMLDivElement>(null);
 
   // Add timeout protection for download state
@@ -45,14 +46,11 @@ const MainPage: React.FC = () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [isDownloading]);
+  
   // Fix for ESLint error: remove unused parameter
   const handleDataChange = () => {
     // No-op
   };
-  // const handleDownload()=>
-  // {
-  //   setIsDownloading(true);
-  // }
 
   // When "Generate Card" is clicked, update finalData.
   const handleGenerateTemplate = (data: TemplateData) => {
@@ -61,6 +59,7 @@ const MainPage: React.FC = () => {
       setShowInputPanel(false);
     }
   };
+  
   const handleDownload = useCallback(() => {
     // Prevent multiple clicks or processing if already downloading
     if (!templateRef.current || isDownloading) return;
@@ -142,14 +141,14 @@ const MainPage: React.FC = () => {
     }
   }, [templateRef, isDownloading, finalData.name]);
   
-  const handleReset = useCallback(() =>{
+  const handleReset = useCallback(() => {
     setFinalData(initialData);
     setShowInputPanel(true);
-  },[initialData]);
+  }, [initialData]);
 
-  const toggleView =useCallback(() =>{
+  const toggleView = useCallback(() => {
     setShowInputPanel(!showInputPanel);
-  },[showInputPanel]);
+  }, [showInputPanel]);
 
   return (
     <div className="bg-white dark:bg-gray-900 flex flex-col lg:flex-row h-screen overflow-hidden relative">
@@ -206,23 +205,23 @@ const MainPage: React.FC = () => {
 
               {/* Buttons container */}
               <div className="flex justify-center gap-2 md:gap-4 pt-0 md:pt-4 border-t border-gray-200 dark:border-gray-700">
-              <button
-  onClick={handleDownload}
-  disabled={isDownloading}
-  className={`bg-green-500 text-white py-2 px-6 rounded-lg shadow-md 
-    ${isDownloading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-600'} 
-    transition-colors h-10 flex items-center justify-center`}
->
-  {isDownloading ? (
-    <>
-      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      Processing...
-    </>
-  ) : "Download"}
-</button>
+                <button
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className={`bg-green-500 text-white py-2 px-6 rounded-lg shadow-md 
+                    ${isDownloading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-green-600'} 
+                    transition-colors h-10 flex items-center justify-center`}
+                >
+                  {isDownloading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : "Download"}
+                </button>
                 <button
                   onClick={handleReset}
                   className="bg-gray-500 text-white py-2 px-6 rounded-lg shadow-md hover:bg-gray-600 transition-colors h-10"
