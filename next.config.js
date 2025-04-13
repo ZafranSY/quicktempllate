@@ -1,14 +1,26 @@
-/** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    formats: ['image/avif', 'image/webp'],
-    deviceSizes: [640, 750, 828, 1080, 1200],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-  },
   experimental: {
     optimizeCss: true,
+    swcMinify: true,
   },
-  // Remove swcMinify as it's not recognized in Next.js 15+
-}
+  compiler: {
+    styledComponents: true,
+  },
+  images: {
+    formats: ['image/webp'],
+    minimumCacheTTL: 86400,
+  },
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.(woff|woff2|eot|ttf|otf)$/,
+      use: ['file-loader'],
+    });
+    return config;
+  },
+};
 
-module.exports = nextConfig
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true'
+});
+
+module.exports = withBundleAnalyzer(nextConfig);

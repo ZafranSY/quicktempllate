@@ -3,6 +3,8 @@
 import { useEffect, useState, lazy, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic"; // Add dynamic import
+// Import all components from the main package
 import { motion, AnimatePresence } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 
@@ -21,10 +23,19 @@ const HowItWorksSection = lazy(() => import('@/components/landing/HowItWorksSect
 const TestimonialsSection = lazy(() => import('@/components/landing/TestimonialsSection'));
 const Footer = lazy(() => import('@/components/landing/Footer'));
 
-// Loading placeholder for lazy-loaded sections
+// Replace with dynamic imports for non-critical animations
+// Move this before it's used
+const AnimatedMenu = dynamic(() => import('@/components/AnimatedMenu'), {
+  ssr: false,
+  loading: () => <Menu size={24} />
+});
+
+// Enhanced loading placeholder for lazy-loaded sections
 const SectionLoading = () => (
-  <div className="w-full py-12 flex justify-center">
+  <div className="w-full py-12 flex flex-col items-center justify-center space-y-4">
     <div className="animate-pulse h-8 w-32 bg-gray-200 rounded"></div>
+    <div className="animate-pulse h-4 w-64 bg-gray-100 rounded"></div>
+    <div className="animate-pulse h-4 w-48 bg-gray-100 rounded"></div>
   </div>
 );
 
@@ -33,20 +44,51 @@ const LandingPage = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Intersection observer hooks - only track what's needed for initial view
+  // Intersection observer hooks - add hooks for lazy-loaded sections
   const [heroRef, heroInView] = useInView({ threshold: 0.1, triggerOnce: true });
+  const [featuresRef, featuresInView] = useInView({ threshold: 0.1, triggerOnce: true });
+  const [howItWorksRef, howItWorksInView] = useInView({ threshold: 0.1, triggerOnce: true });
+  const [testimonialsRef, testimonialsInView] = useInView({ threshold: 0.1, triggerOnce: true });
   const [ctaRef, ctaInView] = useInView({ threshold: 0.1, triggerOnce: true });
 
   // Handle scroll effect for header with passive listener for better performance
+  // Optimize scroll handler with proper debouncing
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      
+      timeoutId = setTimeout(() => {
+        setIsScrolled(window.scrollY > 10);
+      }, 10);
     };
     
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
+
+  // Add cleanup for intersection observers - Fix the ref error
+  useEffect(() => {
+    return () => {
+      // Proper cleanup without accessing ref property
+      // The useInView hook returns a tuple with a function and a boolean
+      // We can't access .ref and .current properties on it
+    };
+  }, []);
+
+// Remove the incorrect cleanup code
+// useEffect(() => {
+//   return () => {
+//     [heroRef, featuresRef, howItWorksRef, testimonialsRef, ctaRef].forEach(
+//       ({ ref }) => ref.current = null
+//     );
+//   };
+// }, []);
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-gray-900">
@@ -114,10 +156,12 @@ const LandingPage = () => {
         {/* Mobile Menu */}
         <AnimatePresence>
           {mobileMenuOpen && (
+            // Simplify motion props for mobile menu
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
               className="md:hidden border-t border-gray-200 bg-white"
             >
               <div className="container mx-auto px-4 py-4 space-y-4">
@@ -223,16 +267,16 @@ const LandingPage = () => {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="relative flex items-center justify-center lg:justify-end"
               >
-                <div className="relative z-10 w-full max-w-[600px] overflow-hidden rounded-xl border bg-white shadow-2xl">
+                // Add CSS containment to hero image container
+                <div className="relative z-10 w-full max-w-[600px] overflow-hidden rounded-xl border bg-white shadow-2xl aspect-[3/2]">
                   <Image
                     src="/images/Mockup_imagea.png"
                     width={600}
                     height={400}
                     alt="Template Generator App Interface"
-                    className="w-full object-cover"
+                    className="w-full h-full object-cover"
                     priority
-                    fetchPriority="high"
-                    loading="eager"
+                    sizes="(max-width: 768px) 100vw, 50vw"
                   />
                 </div>
               </motion.div>
@@ -241,17 +285,29 @@ const LandingPage = () => {
         </section>
 
         {/* Lazy-loaded sections */}
-        <Suspense fallback={<SectionLoading />}>
-          <FeatureSection />
-        </Suspense>
+        <div ref={featuresRef}>
+          {featuresInView && (
+            <Suspense fallback={<SectionLoading />}>
+              <FeatureSection />
+            </Suspense>
+          )}
+        </div>
 
-        <Suspense fallback={<SectionLoading />}>
-          <HowItWorksSection />
-        </Suspense>
+        <div ref={howItWorksRef}>
+          {howItWorksInView && (
+            <Suspense fallback={<SectionLoading />}>
+              <HowItWorksSection />
+            </Suspense>
+          )}
+        </div>
 
-        <Suspense fallback={<SectionLoading />}>
-          <TestimonialsSection />
-        </Suspense>
+        <div ref={testimonialsRef}>
+          {testimonialsInView && (
+            <Suspense fallback={<SectionLoading />}>
+              <TestimonialsSection />
+            </Suspense>
+          )}
+        </div>
 
         {/* CALL TO ACTION SECTION */}
         <section 
